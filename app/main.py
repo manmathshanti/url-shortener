@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -10,10 +12,11 @@ from slowapi.util import get_remote_address
 from app.config import get_settings
 from app.database import create_tables
 from app.exceptions.handlers import register_exception_handlers
-from app.routers import auth, urls, redirect
+from app.routers import auth, urls, redirect, ui
 from app.services.cache_service import close_redis_connection
 
 settings = get_settings()
+static_dir = Path(__file__).resolve().parent / "static"
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -51,12 +54,14 @@ app.add_middleware(
 )
 
 register_exception_handlers(app)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/health", tags=["Health"], summary="Service health check")
 async def health_check():
     return {"status": "healthy", "service": settings.app_name}
 
 
+app.include_router(ui.router)
 app.include_router(auth.router)
 app.include_router(urls.router)
 app.include_router(redirect.router)  # must be last — /{short_code} would swallow earlier routes

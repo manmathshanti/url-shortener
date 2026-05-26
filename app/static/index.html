@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">URL Shortener</p>
+        <h1>Register, log in, shorten links, and check analytics in one place.</h1>
+        <p class="hero-text">
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#shortener-card">Create Short Link</a>
+          <a class="button button-secondary" href="/docs" target="_blank" rel="noreferrer">Open Swagger</a>
+        </div>
+      </div>
+      <div class="hero-panel">
+        <div class="status-row">
+          <span class="status-dot" id="status-dot"></span>
+          <strong id="status-label">Checking API...</strong>
+        </div>
+        <p class="muted" id="status-text">Waiting for health check.</p>
+        <div class="token-box">
+          <span>Session</span>
+          <strong id="session-state">Signed out</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card auth-card">
+        <div class="section-heading">
+          <h2>Authentication</h2>
+          <p>Create an account or sign back in to manage your short links.</p>
+        </div>
+
+        <div class="auth-grid">
+          <form id="register-form" class="panel">
+            <h3>Register</h3>
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" placeholder="you@example.com" required>
+            </label>
+            <label>
+              <span>Username</span>
+              <input type="text" name="username" placeholder="yourname" minlength="3" required>
+            </label>
+            <label>
+              <span>Password</span>
+              <input type="password" name="password" placeholder="At least 8 characters" minlength="8" required>
+            </label>
+            <button class="button button-primary" type="submit">Create Account</button>
+          </form>
+
+          <form id="login-form" class="panel">
+            <h3>Login</h3>
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" placeholder="you@example.com" required>
+            </label>
+            <label>
+              <span>Password</span>
+              <input type="password" name="password" placeholder="Your password" required>
+            </label>
+            <button class="button button-primary" type="submit">Login</button>
+            <button class="button button-secondary" type="button" id="logout-button">Logout</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="card" id="shortener-card">
+        <div class="section-heading">
+          <h2>Shortener</h2>
+          <p>Create a new short URL with an optional custom alias.</p>
+        </div>
+
+        <form id="shorten-form" class="shortener-form">
+          <label class="wide">
+            <span>Original URL</span>
+            <input type="url" name="original_url" placeholder="https://example.com/very/long/link" required>
+          </label>
+          <label>
+            <span>Custom Alias</span>
+            <input type="text" name="custom_alias" placeholder="optional-alias">
+          </label>
+          <button class="button button-primary" type="submit">Shorten URL</button>
+        </form>
+
+        <div id="create-result" class="result-card hidden"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading section-inline">
+          <div>
+            <h2>Your URLs</h2>
+            <p>Refresh your list, open links, copy them, inspect analytics, or delete them.</p>
+          </div>
+          <button class="button button-secondary" id="refresh-urls" type="button">Refresh</button>
+        </div>
+        <div id="urls-empty" class="empty-state">Login to load your saved short URLs.</div>
+        <div id="urls-list" class="url-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <h2>Analytics</h2>
+          <p>Select a short code from your list or type one manually to inspect usage.</p>
+        </div>
+
+        <form id="analytics-form" class="analytics-form">
+          <label class="wide">
+            <span>Short Code</span>
+            <input type="text" name="short_code" placeholder="paste a short code" required>
+          </label>
+          <button class="button button-primary" type="submit">Load Analytics</button>
+        </form>
+
+        <div id="analytics-result" class="analytics-grid">
+          <div class="analytics-placeholder">No analytics loaded yet.</div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
