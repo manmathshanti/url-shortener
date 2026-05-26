@@ -1,106 +1,173 @@
-# URL Shortener API
+# URL Shortener
 
-A production-ready URL shortener service (Bitly-like) built with FastAPI, PostgreSQL, and Redis.
+A FastAPI app for shortening links, managing them behind login, and tracking basic click analytics.
 
-## Features
+It includes:
 
-- **JWT Authentication** — register, login, protected endpoints
-- **URL Management** — create, list, delete short URLs with optional custom aliases
-- **Analytics** — click counts, creation timestamps, last-accessed timestamps
-- **Redis Caching** — fast redirect resolution without hitting the database
-- **Rate Limiting** — 60 requests/minute per IP (configurable)
-- **Async APIs** — fully async with SQLAlchemy 2 + asyncpg
-- **Docker** — one-command setup with `docker-compose up`
-- **Alembic** — database migration support
-- **Swagger UI** — interactive docs at `/docs`
+- user registration and login with JWT auth
+- short link creation with optional custom aliases
+- a simple built-in web UI for normal use
+- redirect handling with Redis caching
+- per-link analytics like total clicks and last access time
 
-## Project Structure
+## What’s in the app
 
-```
+- `POST /auth/register` to create an account
+- `POST /auth/login` to get an access token
+- `POST /urls` to create a short URL
+- `GET /urls` to list your URLs
+- `DELETE /urls/{short_code}` to deactivate one
+- `GET /urls/{short_code}/analytics` to view stats for one link
+- `GET /{short_code}` to redirect to the original URL
+- `GET /health` for a simple health check
+
+Swagger is available at `/docs`.
+
+The app also serves a basic frontend:
+
+- `/` main UI
+- `/app` same UI on an alternate route
+
+## Stack
+
+- FastAPI
+- SQLAlchemy async + `asyncpg`
+- PostgreSQL
+- Redis
+- JWT auth with `python-jose`
+- Alembic for migrations
+
+## Project layout
+
+```text
 app/
-├── main.py              # FastAPI app, middleware, lifespan
-├── config.py            # Settings via pydantic-settings
-├── database.py          # Async SQLAlchemy engine & session
+├── main.py
+├── config.py
+├── database.py
+├── exceptions/
 ├── models/
-│   ├── user.py          # User ORM model
-│   └── url.py           # URL ORM model
-├── schemas/
-│   ├── user.py          # Pydantic request/response schemas
-│   └── url.py           # Pydantic request/response schemas
-├── services/
-│   ├── auth_service.py  # Registration, login, JWT validation
-│   ├── url_service.py   # URL CRUD, redirect, analytics
-│   └── cache_service.py # Redis get/set/delete helpers
 ├── routers/
-│   ├── auth.py          # POST /auth/register, POST /auth/login
-│   ├── urls.py          # POST/GET /urls, DELETE/GET /urls/{code}
-│   └── redirect.py      # GET /{short_code} → 302 redirect
-├── utils/
-│   ├── security.py      # Password hashing, JWT encode/decode
-│   ├── url_helper.py    # Short code generation, URL validation
-│   └── validators.py    # Regex validators
-└── exceptions/
-    └── handlers.py      # Global exception handlers
+├── schemas/
+├── services/
+├── static/
+└── utils/
+tests/
 ```
 
-## Quick Start
+## Local setup
 
-### With Docker (recommended)
-
-```bash
-cp .env.example .env          # edit SECRET_KEY at minimum
-docker-compose up --build
-```
-
-API is available at `http://localhost:8000`. Swagger UI at `http://localhost:8000/docs`.
-
-### Local development
+### 1. Create a virtual environment
 
 ```bash
 python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
+```
+
+Activate it:
+
+```bash
+venv\Scripts\activate
+```
+
+### 2. Install dependencies
+
+```bash
 pip install -r requirements.txt
-cp .env.example .env          # fill in DATABASE_URL, REDIS_URL, SECRET_KEY
+```
+
+### 3. Configure environment variables
+
+This project reads settings from `.env`.
+
+There is currently no `.env.example`, so either create your own `.env` or copy from an existing local setup and replace the secrets.
+
+Important settings:
+
+- `APP_NAME`
+- `DEBUG`
+- `BASE_URL`
+- `TEST_MODE`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `DB_SSLMODE`
+- `AIVEN_DB_HOST`
+- `AIVEN_DB_PORT`
+- `AIVEN_DB_USER`
+- `AIVEN_DB_PASSWORD`
+- `AIVEN_DB_NAME`
+- `AIVEN_DB_SSLMODE`
+- `SECRET_KEY`
+- `REDIS_URL`
+- `REDIS_TTL`
+- `SHORT_CODE_LENGTH`
+- `RATE_LIMIT_PER_MINUTE`
+- `DB_SCHEMA`
+
+How database selection works:
+
+- if `TEST_MODE=true`, the app uses the `DB_*` values
+- if `TEST_MODE=false`, the app uses the `AIVEN_DB_*` values
+
+### 4. Start the app
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-Run database migrations (after initial setup):
+By default it runs on:
+
+- `http://localhost:8000/` for the UI
+- `http://localhost:8000/docs` for Swagger
+
+## Docker
+
+You can run the project with Docker Compose:
 
 ```bash
-alembic upgrade head
+docker-compose up --build
 ```
 
-## API Reference
+That starts:
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/auth/register` | No | Register a new user |
-| POST | `/auth/login` | No | Login, returns JWT token |
-| POST | `/urls` | Yes | Create a short URL |
-| GET | `/urls` | Yes | List your short URLs |
-| DELETE | `/urls/{code}` | Yes | Delete a short URL |
-| GET | `/urls/{code}/analytics` | Yes | URL click analytics |
-| GET | `/{code}` | No | Redirect to original URL |
-| GET | `/health` | No | Health check |
+- the FastAPI app
+- PostgreSQL
+- Redis
 
-## Environment Variables
+The current `docker-compose.yml` is meant for local development.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | postgres://... | Async PostgreSQL connection string |
-| `REDIS_URL` | redis://localhost:6379 | Redis connection string |
-| `SECRET_KEY` | *(required)* | JWT signing secret |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | 30 | Token TTL |
-| `BASE_URL` | http://localhost:8000 | Used to build short URLs |
-| `SHORT_CODE_LENGTH` | 7 | Length of auto-generated codes |
-| `RATE_LIMIT_PER_MINUTE` | 60 | Requests per IP per minute |
-| `REDIS_TTL` | 3600 | Cache TTL in seconds |
+## Notes about the current config
 
-## Running Tests
+A couple of details are worth knowing before deployment:
+
+- the app builds its database connection from `DB_*` or `AIVEN_DB_*` variables in `app/config.py`
+- it does not currently read a single `DATABASE_URL` setting
+- the Dockerfile currently starts Uvicorn on port `8000`, which is fine locally but usually needs adjustment for platforms like Render that inject `PORT`
+
+## Running tests
 
 ```bash
-pip install -r requirements.txt
 pytest tests/ -v
 ```
 
-Tests use SQLite in-memory via `aiosqlite` — no PostgreSQL or Redis required.
+The test suite uses SQLite, but the app’s default schema handling is PostgreSQL-oriented. If tests fail around schema creation, that is a project setup issue, not necessarily an app logic issue.
+
+## Deploying
+
+This project can be deployed to Render, but the cleanest setup is:
+
+- one web service for the FastAPI app
+- one Postgres instance
+- one Redis-compatible key/value instance
+
+Before deploying, make sure you:
+
+- set a real production `BASE_URL`
+- set a strong `SECRET_KEY`
+- use the correct database host, port, username, password, and SSL mode
+- rotate any credentials that were committed or shared during development
+
+## A quick warning
+
+If your `.env` contains real database passwords or JWT secrets, rotate them before pushing the project or deploying it anywhere public.
